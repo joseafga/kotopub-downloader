@@ -3,6 +3,7 @@
 require 'nokogiri'
 require 'fileutils'
 require 'open-uri'
+require 'addressable/uri'
 require_relative 'kotopub_downloader/epub_generator'
 
 Ebook = Struct.new(:id, :name)
@@ -44,7 +45,7 @@ class Downloader
   private
 
   def download2file(url)
-    return unless url.start_with? @url # assert same host
+    return unless url.to_s.start_with? @url # assert same host
 
     dl_path = download_path(url)
     create_path(dl_path)
@@ -66,7 +67,7 @@ class Downloader
 
   # relative
   def download_path(url)
-    path = url[@url.size..].delete_prefix('/')
+    path = url.to_s[@url.size..].delete_prefix('/')
 
     "#{@download_dir}/#{path}"
   end
@@ -74,7 +75,7 @@ class Downloader
   # Avoid duplicates
   def add_download(url)
     # return if ['.jpg', '.png'].any? File.extname(url.to_s) # Test only
-    @download_list << url.to_s unless @download_list.any? url.to_s
+    @download_list << url unless @download_list.any? url
   end
 
   def download_meta
@@ -93,12 +94,12 @@ class Downloader
     end
   end
 
-  # TODO: use nokogiri?
+  # Get manifest items
   def parse_package(content)
     doc = Nokogiri::HTML(content)
 
     doc.xpath('//manifest/item').each do |link|
-      add_download URI.parse("#{@url}/EPUB/").merge(link['href'])
+      add_download Addressable::URI.join("#{@url}/EPUB/", link['href'])
     end
 
     doc.to_s
@@ -109,7 +110,7 @@ class Downloader
 
     # clean urls
     links.map! do |link|
-      add_download URI.parse(url).merge(URI.encode_www_form(link[/url\("([^"]*)/i, 1]))
+      add_download Addressable::URI.join(url, link[/url\("([^"]*)/i, 1])
     end
 
     content.seek(0)
@@ -127,7 +128,7 @@ class Downloader
 
     # Get stylesheets
     doc.xpath('//link').each do |link|
-      add_download URI.parse(url).merge(link['href'])
+      add_download Addressable::URI.join(url, link['href'])
     end
 
     doc.to_s
