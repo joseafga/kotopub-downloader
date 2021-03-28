@@ -87,6 +87,7 @@ class Downloader
     case File.extname(url)
     when '.opf' then parse_package(content)
     when '.css' then parse_css(url, content)
+    when '.html' then parse_xhtml(url, content)
     when '.xhtml' then parse_xhtml(url, content)
     else content.read
     end
