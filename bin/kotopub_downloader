@@ -1,11 +1,15 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'yaml'
 require_relative '../src/kotopub_downloader'
+
+CONFIG = YAML.load_file('config.yml')
 
 CONFIG[:ebooks].each do |eb|
   ebook = Ebook.new(eb[:id], eb[:name])
 
-  downloader = Downloader.new ebook
+  downloader = Downloader.new ebook, CONFIG
   downloader.start
+  downloader.to_epub
 end

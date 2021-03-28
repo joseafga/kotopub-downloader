@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
-require 'yaml'
+require 'nokogiri'
 require 'fileutils'
 require 'open-uri'
 require_relative 'kotopub_downloader/epub_generator'
 
-CONFIG = YAML.load_file('config.yml')
 Ebook = Struct.new(:id, :name)
 
 # Download content of a ebook
