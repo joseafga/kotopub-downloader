@@ -9,72 +9,117 @@ Ebook = Struct.new(:id, :name)
 
 # Download content of a ebook
 class Downloader
-  def initialize(ebook)
+  def initialize(ebook, config)
     @ebook = ebook
-    @download_dir = "#{CONFIG[:download]}/#{@ebook.name}"
-    @url = "#{CONFIG[:url]}/#{@ebook.id}/EPUB"
+    @download_dir = "#{config[:download]}/#{@ebook.name}"
+    @url = "#{config[:url]}/#{@ebook.id}/EPUB"
+
+    @download_list = []
   end
 
+  # Begin download process
   def start
+    current = 0
+
     puts "Downloading #{@ebook.name} metadata ..."
     download_meta
-    links = parse_package
 
-    links.each do |link|
-      next if link.start_with? '..' # not member of epub
+    while (url = @download_list.fetch(current, false))
+      puts "Downloading #{url} ..."
+      download2file(url)
 
-      puts "Downloading #{link} ..."
-      download2file("EPUB/#{link}")
+      current += 1
     end
 
     puts "Done #{@ebook.name}"
   end
 
+  # Convert content to epub format
   def to_epub
-    epub = EpubGenerator.new "#{CONFIG[:download]}/#{@ebook.name}", CONFIG[:download]
+    epub = EpubGenerator.new @download_dir, "#{@download_dir}.epub"
     epub.write
   end
 
   private
 
-  def download2file(target)
-    path = "#{@download_dir}/#{target}"
-    url = "#{@url}/#{target}"
+  def download2file(url)
+    return unless url.start_with? @url # assert same host
 
-    # create full path directory
+    dl_path = download_path(url)
+    create_path(dl_path)
+
+    # Download and parse content urls
+    URI.parse(url).open do |content|
+      parse_content(url, content)
+
+      # Write to file
+      File.open(dl_path, 'wb') do |f|
+        content.seek(0)
+        f.write(content.read)
+      end
+    end
+  end
+
+  # Create full path directory
+  def create_path(path)
     directory = File.dirname(path)
     FileUtils.mkdir_p directory unless Dir.exist?(directory)
+  end
 
-    # download
-    URI.parse(url).open do |content|
-      File.open(path, 'wb') { |f| f.write(content.read) }
-    end
+  # relative
+  def download_path(url)
+    path = url[@url.size..].delete_prefix('/')
+
+    "#{@download_dir}/#{path}"
+  end
+
+  # Avoid duplicates
+  def add_download(url)
+    @download_list << url.to_s unless @download_list.any? url.to_s
   end
 
   def download_meta
-    download2file('mimetype')
-    download2file('META-INF/container.xml')
-    download2file('EPUB/package.opf')
+    download2file("#{@url}/mimetype")
+    download2file("#{@url}/META-INF/container.xml")
+    download2file("#{@url}/EPUB/package.opf")
     # stylesheet
-    download2file('EPUB/css/base.css')
-    download2file('EPUB/css/global.css')
-    # download2file('EPUB/js/global.js') # really need this?
+    # download2file("#{@url}/EPUB/css/base.css")
+    # download2file("#{@url}/EPUB/css/global.css")
   end
 
-  def parse_package
-    links = File.readlines("#{@download_dir}/EPUB/package.opf").grep(/href="/)
-    stylesheets = []
+  def parse_content(url, content)
+    case File.extname(url)
+    when '.opf' then parse_package(content)
+    when '.css' then parse_css(url, content)
+    when '.xhtml' then parse_xhtml(url, content)
+    end
+  end
+
+  # TODO: use nokogiri?
+  def parse_package(content)
+    links = content.readlines.grep(/href="/i)
 
     # clean urls
     links.map! do |link|
-      link[/href="([^"]*)"/, 1]
+      add_download URI.parse("#{@url}/EPUB/").merge(link[/href="([^"]*)"/i, 1])
     end
+  end
 
-    links.each do |link|
-      css = link[%r{xhtml/epub[^/]*}]
-      stylesheets << "#{css}/OEBPS/css/idGeneratedStyles.css" if css
+  def parse_css(url, content)
+    links = content.readlines.grep(/url\((?!data)/i)
+
+    # clean urls
+    links.map! do |link|
+      add_download URI.parse(url).merge(link[/url\("([^"]*)/i, 1])
     end
+  end
 
-    links + stylesheets.uniq
+  def parse_xhtml(url, content)
+    doc = Nokogiri::HTML(content)
+
+    # get all stylesheets
+    doc.xpath('//link').each do |link|
+      add_download URI.parse(url).merge(link['href'])
+    end
   end
 end
