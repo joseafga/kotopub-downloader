@@ -4,3 +4,6 @@
 :ebooks:
   - :id: "xyz"
     :name: "Some Better Tittle"
+:blacklist:
+  :style:
+    - ignored.css

@@ -15,6 +15,7 @@ class Downloader
     @url = "#{config[:url]}/#{@ebook.id}/EPUB"
 
     @download_list = []
+    @blacklist_style = config[:blacklist][:style] || []
   end
 
   # Begin download process
@@ -50,12 +51,9 @@ class Downloader
 
     # Download and parse content urls
     URI.parse(url).open do |content|
-      parse_content(url, content)
-
       # Write to file
       File.open(dl_path, 'wb') do |f|
-        content.seek(0)
-        f.write(content.read)
+        f.write parse_content(url, content)
       end
     end
   end
@@ -75,6 +73,7 @@ class Downloader
 
   # Avoid duplicates
   def add_download(url)
+    # return if ['.jpg', '.png'].any? File.extname(url.to_s) # Test only
     @download_list << url.to_s unless @download_list.any? url.to_s
   end
 
@@ -82,9 +81,6 @@ class Downloader
     download2file("#{@url}/mimetype")
     download2file("#{@url}/META-INF/container.xml")
     download2file("#{@url}/EPUB/package.opf")
-    # stylesheet
-    # download2file("#{@url}/EPUB/css/base.css")
-    # download2file("#{@url}/EPUB/css/global.css")
   end
 
   def parse_content(url, content)
@@ -92,6 +88,7 @@ class Downloader
     when '.opf' then parse_package(content)
     when '.css' then parse_css(url, content)
     when '.xhtml' then parse_xhtml(url, content)
+    else content.read
     end
   end
 
@@ -111,16 +108,27 @@ class Downloader
 
     # clean urls
     links.map! do |link|
-      add_download URI.parse(url).merge(link[/url\("([^"]*)/i, 1])
+      add_download URI.parse(url).merge(URI.encode_www_form(link[/url\("([^"]*)/i, 1]))
     end
+
+    content.seek(0)
+    content.read
   end
 
   def parse_xhtml(url, content)
     doc = Nokogiri::HTML(content)
 
-    # get all stylesheets
+    # Remove all unwanted
+    doc.xpath('//script').remove
+    @blacklist_style.each do |style|
+      doc.xpath("//link[contains(@href,'#{style}')]").remove
+    end
+
+    # Get stylesheets
     doc.xpath('//link').each do |link|
       add_download URI.parse(url).merge(link['href'])
     end
+
+    doc.to_s
   end
 end
