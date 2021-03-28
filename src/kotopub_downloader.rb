@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
+require 'yaml'
 require 'fileutils'
 require 'open-uri'
-require 'yaml'
+require_relative 'kotopub_downloader/epub_generator'
 
 CONFIG = YAML.load_file('config.yml')
 Ebook = Struct.new(:id, :name)
@@ -28,6 +29,11 @@ class Downloader
     end
 
     puts "Done #{@ebook.name}"
+  end
+
+  def to_epub
+    epub = EpubGenerator.new "#{CONFIG[:download]}/#{@ebook.name}", CONFIG[:download]
+    epub.write
   end
 
   private
