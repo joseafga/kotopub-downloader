@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require 'fileutils'
@@ -13,7 +12,7 @@ class Downloader
   def initialize(ebook)
     @ebook = ebook
     @download_dir = "#{CONFIG[:download]}/#{@ebook.name}"
-    @url = "https://example.com/books/#{@ebook.id}/EPUB"
+    @url = "#{CONFIG[:url]}/#{@ebook.id}/EPUB"
   end
 
   def start
@@ -73,11 +72,4 @@ class Downloader
 
     links + stylesheets.uniq
   end
-end
-
-CONFIG[:ebooks].each do |eb|
-  ebook = Ebook.new(eb[:id], eb[:name])
-
-  downloader = Downloader.new ebook
-  downloader.start
 end

@@ -1,4 +1,5 @@
 ---
+:url: "https://example.com/books"
 :download: "/home/<user>/Downloads"
 :ebooks:
   - :id: "xyz"
