@@ -13,4 +13,4 @@ Clone repository and install dependencies
 Configure `config.yml.example` setting your preferences and rename it
 
     $ mv config.yml.example config.yml
-    $ ./bin/kotopub-downloader
+    $ ./bin/kotopub_downloader
