@@ -97,12 +97,13 @@ class Downloader
 
   # TODO: use nokogiri?
   def parse_package(content)
-    links = content.readlines.grep(/href="/i)
+    doc = Nokogiri::HTML(content)
 
-    # clean urls
-    links.map! do |link|
-      add_download URI.parse("#{@url}/EPUB/").merge(link[/href="([^"]*)"/i, 1])
+    doc.xpath('//manifest/item').each do |link|
+      add_download URI.parse("#{@url}/EPUB/").merge(link['href'])
     end
+
+    doc.to_s
   end
 
   def parse_css(url, content)
