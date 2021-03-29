@@ -86,9 +86,9 @@ class Downloader
   end
 
   def download_meta
-    download2file("#{@url}/mimetype")
-    download2file("#{@url}/META-INF/container.xml")
-    download2file("#{@url}/EPUB/package.opf")
+    add_download "#{@url}/mimetype"
+    add_download "#{@url}/META-INF/container.xml"
+    add_download "#{@url}/EPUB/package.opf"
   end
 
   def parse_content(url, content)
