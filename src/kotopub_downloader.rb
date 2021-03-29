@@ -79,7 +79,7 @@ class Downloader
 
   # Avoid duplicates
   def add_download(url)
-    # return if ['.jpg', '.png'].any? File.extname(url.to_s) # Test only
+    # return if ['.jpg', '.png', '.gif'].any? File.extname(url.to_s) # Test only
     @download_list << url unless @download_list.any? url
   end
 
@@ -114,8 +114,8 @@ class Downloader
     links = content.readlines.grep(/url\((?!data)/i)
 
     # clean urls
-    links.map! do |link|
-      add_download Addressable::URI.join(url, link[/url\("([^"]*)/i, 1])
+    links.map do |link|
+      add_download Addressable::URI.join(url, link[/url\(([^)]*)/i, 1].tr('"\'', ''))
     end
 
     content.seek(0)
