@@ -101,13 +101,13 @@ class Downloader
 
   # Get manifest items
   def parse_package(content)
-    doc = Nokogiri::HTML(content)
+    xml = Nokogiri::XML content
 
-    doc.xpath('//manifest/item').each do |link|
+    xml.xpath('//xmlns:manifest/xmlns:item').each do |link|
       add_download Addressable::URI.join("#{@url}/EPUB/", link['href'])
     end
 
-    doc.to_s
+    xml.to_s
   end
 
   def parse_css(url, content)
@@ -118,12 +118,12 @@ class Downloader
       add_download Addressable::URI.join(url, link[/url\(([^)]*)/i, 1].tr('"\'', ''))
     end
 
-    content.seek(0)
+    content.seek 0
     content.read
   end
 
   def parse_xhtml(url, content)
-    doc = Nokogiri::HTML(content)
+    doc = Nokogiri::HTML content
 
     # Remove all unwanted
     doc.xpath('//script').remove
