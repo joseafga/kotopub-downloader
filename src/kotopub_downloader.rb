@@ -17,16 +17,16 @@ class Downloader
 
     @download_list = []
     @blacklist_style = config[:blacklist][:style] || []
+    @current = 0
   end
 
   # Begin download process
   def start
-    current = 0
     download_meta
 
-    while (url = @download_list.fetch(current, false))
+    while (url = @download_list.fetch(@current, false))
       download2file url
-      current += 1
+      @current += 1
     end
   end
 
@@ -40,7 +40,7 @@ class Downloader
 
   # Download and parse content urls
   def download(url, dl_path)
-    puts "Downloading: #{url} ..."
+    puts "Downloading [#{@current + 1}/#{@download_list.size}]: #{url} ..."
     encoded_url = Addressable::URI.encode(url)
 
     URI.parse(encoded_url).open do |content|
