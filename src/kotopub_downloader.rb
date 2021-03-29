@@ -18,6 +18,7 @@ class Downloader
     @download_list = []
     @blacklist_style = config[:blacklist][:style] || []
     @current = 0
+    @fail = 0 # try 3 times before skip/exit
   end
 
   # Begin download process
@@ -26,7 +27,7 @@ class Downloader
 
     while (url = @download_list.fetch(@current, false))
       download2file url
-      @current += 1
+      @current += 1 if @fail.zero?
     end
   end
 
@@ -44,15 +45,16 @@ class Downloader
     encoded_url = Addressable::URI.encode(url)
 
     URI.parse(encoded_url).open do |content|
-      # Write to file
-      File.open(dl_path, 'wb') do |f|
-        f.write parse_content(url, content)
-      end
+      File.open(dl_path, 'wb') { |f| f.write parse_content(url, content) }
     end
+
+    @fail = 0 # success
   rescue StandardError => e
     puts "Error: #{url}, #{e.message}"
+
     # cant download book
-    exit if url == "#{@url}/EPUB/package.opf"
+    exit if url == "#{@url}/EPUB/package.opf" && @fail == 2
+    @fail = @fail < 2 ? @fail + 1 : 0
   end
 
   def download2file(url)
