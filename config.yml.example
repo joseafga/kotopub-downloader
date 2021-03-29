@@ -1,9 +1,11 @@
 ---
-:url: "https://example.com/books"
-:download: "/home/<user>/Downloads"
+:url: https://example.com/books
+:download: /home/<user>/Downloads
 :ebooks:
-  - :id: "xyz"
-    :name: "Some Better Tittle"
+  - :id: xyz
+    :name: Some Better Title
+  - :id: 123
+    :name: Example name
 :blacklist:
   :style:
     - ignored.css
