@@ -22,18 +22,12 @@ class Downloader
   # Begin download process
   def start
     current = 0
-
-    puts "Downloading #{@ebook.name} metadata ..."
     download_meta
 
     while (url = @download_list.fetch(current, false))
-      puts "Downloading #{url} ..."
-      download2file(url)
-
+      download2file url
       current += 1
     end
-
-    puts "Done #{@ebook.name}"
   end
 
   # Convert content to epub format
@@ -44,19 +38,30 @@ class Downloader
 
   private
 
-  def download2file(url)
-    return unless url.to_s.start_with? @url # assert same host
+  # Download and parse content urls
+  def download(url, dl_path)
+    puts "Downloading: #{url} ..."
+    encoded_url = Addressable::URI.encode(url)
 
-    dl_path = download_path(url)
-    create_path(dl_path)
-
-    # Download and parse content urls
-    URI.parse(url).open do |content|
+    URI.parse(encoded_url).open do |content|
       # Write to file
       File.open(dl_path, 'wb') do |f|
         f.write parse_content(url, content)
       end
     end
+  rescue StandardError => e
+    puts "Error: #{url}, #{e.message}"
+    # cant download book
+    exit if url == "#{@url}/EPUB/package.opf"
+  end
+
+  def download2file(url)
+    return unless url.to_s.start_with? @url # assert same host
+
+    dl_path = download_path url
+
+    create_path dl_path
+    download url, dl_path
   end
 
   # Create full path directory

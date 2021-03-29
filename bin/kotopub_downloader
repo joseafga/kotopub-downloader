@@ -12,4 +12,6 @@ CONFIG[:ebooks].each do |eb|
   downloader = Downloader.new ebook, CONFIG
   downloader.start
   downloader.to_epub
+
+  puts "Done #{ebook.name}"
 end
